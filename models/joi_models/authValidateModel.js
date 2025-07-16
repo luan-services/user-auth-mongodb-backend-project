@@ -2,7 +2,7 @@ import Joi from "joi"
 
 // define o schema de validação para registro
 export const authRegisterSchema = Joi.object({
-    username: Joi.string().min(1).max(12).required().messages({
+    username: Joi.string().max(12).required().messages({
         'string.empty': 'Name is required', // mensagens custom para cada erro, se não adicionadas, o joi lança mensagens padrao
         'any.required': 'Name is required',
         'string.max': 'Name must be at most {#limit} characters'
@@ -12,8 +12,8 @@ export const authRegisterSchema = Joi.object({
         'any.required': 'Email is required'
     }),
     password: Joi.string().min(8).max(60).required().messages({
-        'string.empty': 'Phone is required',
-        'any.required': 'Phone is required',
+        'string.empty': 'Password is required',
+        'any.required': 'Password is required',
         'string.min': 'Password must be at least {#limit} characters',
         'string.max': 'Password must be at maximum {#limit} characters'
     }),
@@ -37,8 +37,3 @@ export const authLoginSchema = Joi.object({
     })
 });
 
-
-/* 
-    role: Joi.string().valid('admin', 'user').default('user').messages({
-        'any.only': 'Role must be either "admin" or "user"',
-    }), */

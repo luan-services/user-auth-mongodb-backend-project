@@ -12,6 +12,9 @@ import cors from "cors";
 // importa library que manipula cookies
 import cookieParser from "cookie-parser"
 
+import userRoutes from "./routes/userRoutes.js"
+// importa a função errorHandler para dar resposta para erros
+
 // carrega as variáveis .env
 dotenv.config()
 
@@ -39,6 +42,10 @@ app.use(cookieParser());
 
 // route apontando para auth
 app.use("/api/auth", authRoutes)
+
+// novo router, agora apontando pra users
+app.use("/api/users", userRoutes)
+
 
 // possibilita de usar a função errorHandler no server toda vez que a função throw new Error() é chamada
 app.use(errorHandler)
