@@ -154,7 +154,7 @@ export const updateUser = asyncHandler(async (req, res) => {
     let hashedPassword;
 
     if (req.body.password) {
-        hashedPassword = await bcrypt.hash(password, 10)
+        hashedPassword = await bcrypt.hash(req.body.password, 10)
         req.body.password = hashedPassword
     }
 
@@ -162,7 +162,7 @@ export const updateUser = asyncHandler(async (req, res) => {
             req.body, { new: true } // returns the updated document
     );
 
-    console.log(`User updated ${updateUser}`)
+    console.log(`User updated ${updatedUser}`)
     
     if (updatedUser) {
         // envia uma resposta json com o id do user e o email
@@ -193,7 +193,7 @@ export const deleteUser = asyncHandler(async (req, res) => {
     // se não existe lança erro
     if (!user) {
         res.status(404);
-        throw new Error("Contact not found");
+        throw new Error("User not found");
     }
     // deleta o contato (todas essas funções vem diretamente do schema do mangoose, que vem com funções built-in para gerenciar o db)
     await user.deleteOne();
