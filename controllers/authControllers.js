@@ -113,6 +113,11 @@ export const loginUser = asyncHandler(async (req, res) => {
     // Ver se o usuário está registrado no bd
     const user = await User.findOne({email})
 
+    if (user && !user.isVerified) {
+        res.status(401);
+        throw new Error("Please, verify e-mail first");
+    }
+
     // caso o usuario esteja correto, e a senha hasheada tambem
     if(user && (await bcrypt.compare(password, user.password))) {
 
