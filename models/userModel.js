@@ -33,6 +33,9 @@ const userSchema = mongoose.Schema({
     lastEmailSentAt: { // limitador para impedir multiplos emails das rotas forget password e confirmation email
         type: Date
     },
+    emailSentCount: {
+        type: String
+    },
     emailVerificationToken: {
         type: String
     },

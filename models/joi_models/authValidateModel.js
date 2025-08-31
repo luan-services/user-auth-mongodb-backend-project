@@ -47,7 +47,7 @@ export const authVerifyEmailTokenSchema = Joi.object({
 });
 
 // schema joi para rota de reenviar email de verificação receber um e-mail valido
-export const resendVerificationEmailSchema = Joi.object({
+export const authResendVerificationEmailSchema = Joi.object({
     email: Joi.string().email().required().messages({
         'string.email': 'A valid email is required',
         "string.empty": "Email field cannot be blank",     

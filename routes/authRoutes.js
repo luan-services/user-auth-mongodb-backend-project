@@ -3,7 +3,7 @@ import { registerUser, loginUser, refreshToken, logoutUser, resendVerificationEm
 // importa o middleware de validação do JOI
 import { validateJoiSchema } from "../middleware/validateJoiSchema.js";
 // importa o schema do JOI
-import { authLoginSchema, authRegisterSchema } from "../models/joi_models/authValidateModel.js";
+import { authLoginSchema, authRegisterSchema, authResendVerificationEmailSchema, authVerifyEmailTokenSchema } from "../models/joi_models/authValidateModel.js";
 
 import express from "express"
 
@@ -18,9 +18,9 @@ router.post("/register", validateJoiSchema(authRegisterSchema, "body"), register
 router.post("/login", validateJoiSchema(authLoginSchema, "body"), loginUser)
 
 // route para verificação de conta por e-mail;
-router.get("/verify-email/:token", verifyEmail);
+router.get("/verify-email/:token", validateJoiSchema(authVerifyEmailTokenSchema, "params"), verifyEmail);
 // route para reenvio do e-mail de verificação
-router.post("/resend-verification-email", resendVerificationEmail)
+router.post("/resend-verification-email", validateJoiSchema(authResendVerificationEmailSchema, "body"), resendVerificationEmail)
 
 // route para atualizar o token, não precisa de validação JWT nem JOI aqui pois os cookies são lidos em index.js com o cookie parser e validados dentro da funçao
 router.post("/refresh", refreshToken);

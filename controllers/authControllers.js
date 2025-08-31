@@ -45,6 +45,8 @@ export const registerUser = asyncHandler(async (req, res) => {
         lastEmailSentAt: new Date() // gera um limitador para saber a última vez que um e-mail foi enviado
     });
     
+    console.log("verification token: ", verificationToken);
+    
     if (user) {
         try {
             const verificationURL = `${process.env.WEBSITE_URL}/api/auth/verify-email/${verificationToken}`;
@@ -135,7 +137,7 @@ export const resendVerificationEmail = asyncHandler(async (req, res) => {
     user.lastEmailSentAt = new Date(); // atualiza o tempo do último envio
 
     await user.save();
-
+    console.log("verification token: ", verificationToken);
     // Envia o e-mail
     try {
         const verificationURL = `${process.env.WEBSITE_URL}/api/auth/verify-email/${verificationToken}`;
