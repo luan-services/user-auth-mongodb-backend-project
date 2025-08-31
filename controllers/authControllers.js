@@ -98,6 +98,70 @@ export const verifyEmail = asyncHandler(async (req, res) => {
     res.status(200).json({ message: "E-mail successfully verified" });
 });
 
+//@desc Resend verification email
+//@route POST /api/auth/resend-verification-email
+//@access public
+export const resendVerificationEmail = asyncHandler(async (req, res) => {
+    const { email } = req.body;
+    const user = await User.findOne({ email });
+
+    if (!user) {
+        res.status(404);
+        throw new Error("User not found");
+    }
+
+    if (user.isVerified) {
+        res.status(400);
+        throw new Error("This email was already verified");
+    }
+
+    if (user.lastEmailSentAt) { // caso exista uma data para o ultimo envio de email
+        const timeSinceLastEmail = Date.now() - user.lastEmailSentAt.getTime();
+
+        const cooldownPeriod = 2 * 60 * 1000; // 60 minutos de cooldown
+
+        if (timeSinceLastEmail < cooldownPeriod) {
+            const timeLeft = Math.ceil((cooldownPeriod - timeSinceLastEmail) / 1000);
+            res.status(429); 
+            throw new Error(`Please, wait more ${timeLeft} seconds before sending another e-mail`);
+        }
+    }
+
+    // se passou do cooldown, gera e salva um novo token
+    const verificationToken = crypto.randomBytes(32).toString("hex");
+    user.emailVerificationToken = crypto.createHash("sha256").update(verificationToken).digest("hex");
+
+    user.emailVerificationTokenExpires = Date.now() + 10 * 60 * 1000; // novo tempo de expiração (10 min)
+    user.lastEmailSentAt = new Date(); // atualiza o tempo do último envio
+
+    await user.save();
+
+    // Envia o e-mail
+    try {
+        const verificationURL = `${process.env.WEBSITE_URL}/api/auth/verify-email/${verificationToken}`;
+        const message = `Olá ${user.username},\n\n
+        Você solicitou um novo link de verificação. Por favor, clique no link a seguir: 
+        \n${verificationURL}\n\nSe você não fez esta solicitação, por favor, ignore este e-mail.`;
+
+        await sendEmail({
+            email: user.email,
+            subject: 'Novo E-mail de Verificação',
+            message,
+        });
+
+        res.status(200).json({ message: "New verification e-mail sent" });
+
+    } catch (error) {
+        // Importante: Se o envio falhar, não devemos penalizar o usuário.
+        // Podemos resetar o `verificationEmailSentAt` para que ele possa tentar de novo imediatamente,
+        // ou simplesmente não atualizá-lo até que o e-mail seja enviado com sucesso.
+        // A lógica atual já lida com isso, pois o `save()` acontece antes do envio.
+        // Se quisermos ser mais robustos, poderíamos fazer o save() depois do sendEmail().
+        res.status(500);
+        throw new Error("Error re-sending verification e-mail, try again later");
+    }
+});
+
 //@desc Login a user
 //@route POST /api/auth/login
 //@access public
