@@ -42,11 +42,12 @@ export const registerUser = asyncHandler(async (req, res) => {
         password: hashedPassword,
         emailVerificationToken: emailVerificationToken,
         emailVerificationTokenExpires: emailVerificationTokenExpires,
-        lastEmailSentAt: new Date() // gera um limitador para saber a última vez que um e-mail foi enviado
+        lastEmailSentAt: new Date(), // gera um limitador para saber a última vez que um e-mail foi enviado
+        emailSentCount: 0 // define a qtd de emails enviados como 0
     });
     
     console.log("verification token: ", verificationToken);
-    
+
     if (user) {
         try {
             const verificationURL = `${process.env.WEBSITE_URL}/api/auth/verify-email/${verificationToken}`;
@@ -117,24 +118,36 @@ export const resendVerificationEmail = asyncHandler(async (req, res) => {
         throw new Error("This email was already verified");
     }
 
-    if (user.lastEmailSentAt) { // caso exista uma data para o ultimo envio de email
+    if (user.lastEmailSentAt && user.emailSentCount) { // caso exista uma data para o ultimo envio de email
         const timeSinceLastEmail = Date.now() - user.lastEmailSentAt.getTime();
 
         const cooldownPeriod = 2 * 60 * 1000; // 60 minutos de cooldown
+        const maxEmailCount = 4;
 
-        if (timeSinceLastEmail < cooldownPeriod) {
+        if (timeSinceLastEmail < cooldownPeriod && user.emailSentCount > maxEmailCount) { // se o usuário ainda estiver em cooldown e a qnt de emails enviados for maior de 4
             const timeLeft = Math.ceil((cooldownPeriod - timeSinceLastEmail) / 1000);
             res.status(429); 
             throw new Error(`Please, wait more ${timeLeft} seconds before sending another e-mail`);
         }
     }
 
-    // se passou do cooldown, gera e salva um novo token
+    // se passou do cooldown e da qtd de emails enviados, gera e salva um novo token.
     const verificationToken = crypto.randomBytes(32).toString("hex");
     user.emailVerificationToken = crypto.createHash("sha256").update(verificationToken).digest("hex");
 
     user.emailVerificationTokenExpires = Date.now() + 10 * 60 * 1000; // novo tempo de expiração (10 min)
+
+    // caso ele não esteja em cooldown, a qtd de e-mails enviados é 1; 
+    if (timeSinceLastEmail >= cooldownPeriod) {
+        user.emailSentCount = 1;
+    } 
+    else {
+        // caso esteja em cooldown, pega o valor antigo e soma 1
+        user.emailSentCount = user.emailSentCount += 1;
+    }
+    // enqunato a qtd de e-mails enviados aumentar, o cooldown é colocado pra data atual
     user.lastEmailSentAt = new Date(); // atualiza o tempo do último envio
+
 
     await user.save();
     console.log("verification token: ", verificationToken);
