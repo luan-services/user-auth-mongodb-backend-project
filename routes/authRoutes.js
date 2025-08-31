@@ -16,6 +16,8 @@ const router = express.Router();
 router.post("/register", validateJoiSchema(authRegisterSchema, "body"), registerUser)
 // função post que valida apenas alguns dados de login
 router.post("/login", validateJoiSchema(authLoginSchema, "body"), loginUser)
+// route para verificação de conta por e-mail;
+router.get("/verify-email/:token", verifyEmail);
 
 // route para atualizar o token, não precisa de validação JWT nem JOI aqui pois os cookies são lidos em index.js com o cookie parser e validados dentro da funçao
 router.post("/refresh", refreshToken);
