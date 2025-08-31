@@ -37,24 +37,20 @@ export const authLoginSchema = Joi.object({
     })
 });
 
-export const tokenVerificationSchema = Joi.object({
-    // Estamos validando 'token', que é o nome do parâmetro na rota
-    token: Joi.string()
-               .hex() // Garante que a string contém apenas caracteres hexadecimais
-               .length(64) // Nosso token original tem 64 caracteres (crypto.randomBytes(32).toString('hex'))
-               .required()
-               .messages({
-                   "string.hex": "O token de verificação deve ser uma string hexadecimal.",
-                   "string.length": "O token de verificação possui um formato inválido.",
-                   "any.required": "O token de verificação é obrigatório."
-               })
+// schema joi para envio de token crypto para rota de verificação de e-mail
+export const authVerifyEmailTokenSchema = Joi.object({
+    token: Joi.string().hex().length(64).required().messages({
+        "string.hex": "Verify Email Token must be a hex string",
+        "string.length": "Verify Email Token length not valid",
+        "any.required": "Verify Email Token is mandatory"
+    })
 });
 
-// schema joi para controller de reenviar email de verificação
+// schema joi para rota de reenviar email de verificação receber um e-mail valido
 export const resendVerificationEmailSchema = Joi.object({
     email: Joi.string().email().required().messages({
-        "string.email": "O e-mail deve ser um endereço válido.",
-        "string.empty": "O campo de e-mail não pode estar vazio.",
-        "any.required": "O campo de e-mail é obrigatório."
+        'string.email': 'A valid email is required',
+        "string.empty": "Email field cannot be blank",     
+        'any.required': 'Email is required'
     })
 });
