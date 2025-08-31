@@ -8,6 +8,10 @@ import bcrypt from "bcrypt"
 // importando library que cria token
 import jwt from "jsonwebtoken"
 
+import crypto from "crypto"; 
+import { sendEmail } from "../utils/sendEmail.js"
+
+
 //@desc Register a user
 //@route POST /api/auth/register
 //@access public
@@ -26,18 +30,42 @@ export const registerUser = asyncHandler(async (req, res) => {
         throw new Error('User already exists');
     }   
 
+    const verificationToken = crypto.randomBytes(32).toString("hex"); // gera um token de verificação de e-mail
+    const emailVerificationToken = crypto.createHash("sha256").update(verificationToken).digest("hex"); // faz o hashing do token para proteção
+
+    const emailVerificationTokenExpires = Date.now() + 10 * 60 * 1000 // 10 minutos o token de verificação de e-mail expira
+
     // Usa o model do mangoose para criar uma row (um objeto) de usuario  (todas essas funções vem diretamente do schema do mangoose, que vem com funções built-in para gerenciar o db)
     const user = await User.create({
         username: username,
         email: email,
         password: hashedPassword,
+        emailVerificationToken: emailVerificationToken,
+        emailVerificationTokenExpires: emailVerificationTokenExpires,
+        lastEmailSentAt: new Date() // gera um limitador para saber a última vez que um e-mail foi enviado
     });
-
-    console.log(`User created ${user}`)
     
     if (user) {
-        // envia uma resposta json com o id do user e o email
-        return res.status(201).json({_id: user.id, email: user.email});
+        try {
+            const verificationURL = `${process.env.WEBSITE_URL}/api/auth/verify-email/${verificationToken}`;
+
+            const message = `Olá ${user.username},\n\n
+            Por favor, verifique seu e-mail clicando no seguinte link: 
+            \n${verificationURL}\n\n
+            Se você não criou esta conta, por favor, ignore este e-mail.`;
+
+            await sendEmail({
+                email: user.email,
+                subject: 'Verificação de E-mail',
+                message: message,
+            });
+
+            res.status(201).json({message: "Usuário registrado com sucesso. Por favor, verifique seu e-mail."});
+        } catch (error) {
+            await User.findByIdAndDelete(user._id);
+            res.status(500);
+            throw new Error("Erro ao enviar o e-mail de verificação. Tente novamente mais tarde.");
+        }
     } else {
         res.status(400)
         throw new Error("User data is not valid")
