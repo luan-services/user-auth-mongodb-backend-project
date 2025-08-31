@@ -60,11 +60,11 @@ export const registerUser = asyncHandler(async (req, res) => {
                 message: message,
             });
 
-            res.status(201).json({message: "Usuário registrado com sucesso. Por favor, verifique seu e-mail."});
+            res.status(201).json({message: "User successfully registered, check you e-mail"});
         } catch (error) {
             await User.findByIdAndDelete(user._id);
             res.status(500);
-            throw new Error("Erro ao enviar o e-mail de verificação. Tente novamente mais tarde.");
+            throw new Error("Error trying to send e-mail, try again later");
         }
     } else {
         res.status(400)
@@ -72,6 +72,31 @@ export const registerUser = asyncHandler(async (req, res) => {
     }
 
 })
+
+//@desc Verify user email
+//@route GET /api/auth/verify-email/:token
+//@access public
+export const verifyEmail = asyncHandler(async (req, res) => {
+    // faz o hashing do token que veio dos params para proteção
+    const hashedToken = crypto.createHash("sha256").update(req.params.token).digest("hex");
+
+    const user = await User.findOne({ // procura no bd se há um usuário com esse token e que não esteja expirado.
+        emailVerificationToken: hashedToken,
+        emailVerificationTokenExpires: { $gt: Date.now() },
+    });
+
+    if (!user) { // se não achar
+        res.status(400);
+        throw new Error("Invalid or expired Token");
+    }
+
+    user.isVerified = true;
+    user.emailVerificationToken = undefined;
+    user.emailVerificationTokenExpires = undefined;
+    await user.save();
+
+    res.status(200).json({ message: "E-mail successfully verified" });
+});
 
 //@desc Login a user
 //@route POST /api/auth/login
