@@ -7,7 +7,7 @@ import {User} from "../models/userModel.js"
 // funcao pra checar se o token é valido e passar para próximo route, a abordagem checa cookies (enviando pelo navegador), ou headers (enviando por mobile ou por servidores)
 // essa abordagem serve para aplicações, porque requisições client-side (navegador) devem ser sempre feitas via cookie pois não podem acessar os dados.
 export const validateJwtToken = asyncHandler( async (req, res, next) => {
-        // variável p guardar o otken
+        // variável p guardar o token
         let token;
 
         // le o header do request e checa se existe um token nos headers

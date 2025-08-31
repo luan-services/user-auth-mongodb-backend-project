@@ -26,6 +26,19 @@ const userSchema = mongoose.Schema({
         enum: ["user", "driver", "admin"],
         default: "user"
     },
+    isVerified: {
+        type: Boolean,
+        default: false
+    },
+    lastEmailSentAt: { // limitador para impedir multiplos emails das rotas forget password e confirmation email
+        type: Date
+    },
+    emailVerificationToken: {
+        type: String
+    },
+    emailVerificationTokenExpires: {
+        type: Date
+    },
     }, {
     timestamps: true
 });
