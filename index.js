@@ -37,8 +37,7 @@ const port = process.env.PORT || 5000;
 
 // isso é uma função built in do express que possibilita o app de ler objetos .json que vem no BODY de um comando POST
 app.use(express.json())
-// biblioteca para ler e enviar cookies
-app.use(cookieParser());
+app.use(cookieParser()); // biblioteca para ler e enviar cookies
 
 // route apontando para auth
 app.use("/api/auth", authRoutes)

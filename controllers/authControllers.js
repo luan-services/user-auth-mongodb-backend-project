@@ -271,7 +271,7 @@ export const loginUser = asyncHandler(async (req, res) => {
 export const refreshToken = asyncHandler(async (req, res) => {
     // lê os cookies que vieram junto c o request
     const cookies = req.cookies;  
-    // se não há cookie de refresh, jogan ovo erro
+    // se não há cookie de refresh, jogan novo erro
     if (!cookies?.refreshToken) {
         res.status(401);
         throw new Error("No refresh token");
@@ -353,3 +353,11 @@ export const logoutUser = asyncHandler(async (req, res) => {
     // após realizar o log out, é necessário apagar o accessToken pois ele dura até 15min (isso é feito no frontend)
     return res.status(200).json({ message: "Logged out successfully" });
 });
+
+
+
+
+
+
+
+
