@@ -355,9 +355,105 @@ export const logoutUser = asyncHandler(async (req, res) => {
 });
 
 
+//@desc User requests a password reset
+//@route POST /api/auth/forgot-password
+//@access public
+export const forgotPassword = asyncHandler(async (req, res) => {
+    // 1. Encontra o usuário pelo e-mail
+    const { email } = req.body;
+    const user = await User.findOne({ email });
+
+    if (!user) {
+        res.status(200).json({ message: "If there is an user with this e-mail, we'll be sending an link to redefine your password" });
+        return;
+    }
+
+    if (user.lastEmailSentAt && user.emailSentCount) { // caso exista uma data para o ultimo envio de email
+        const timeSinceLastEmail = Date.now() - user.lastEmailSentAt.getTime();
+
+        const cooldownPeriod = 2 * 60 * 1000; // 60 minutos de cooldown
+        const maxEmailCount = 4;
+
+        if (timeSinceLastEmail < cooldownPeriod && user.emailSentCount > maxEmailCount) { // se o usuário ainda estiver em cooldown e a qnt de emails enviados for maior de 4
+            const timeLeft = Math.ceil((cooldownPeriod - timeSinceLastEmail) / 1000);
+            res.status(429); 
+            throw new Error(`Please, wait more ${timeLeft} seconds before sending another e-mail`);
+        }
+        
+        // caso ele não esteja em cooldown, a qtd de e-mails enviados é 1; 
+        if (timeSinceLastEmail >= cooldownPeriod) {
+            user.emailSentCount = 1;
+        } 
+        else {
+            // caso esteja em cooldown, pega o valor antigo e soma 1
+            user.emailSentCount = user.emailSentCount + 1;
+        }
+
+    }
+
+    const resetToken = crypto.randomBytes(32).toString("hex");
+    user.passwordResetToken = crypto.createHash("sha256").update(resetToken).digest("hex"); // faz o hash do token e salva no banco de dados
+    
+    user.passwordResetTokenExpires = Date.now() + 10 * 60 * 1000; // Expira em 10 minutos
+
+    // enqunato a qtd de e-mails enviados aumentar, o cooldown é colocado pra data atual
+    user.lastEmailSentAt = new Date(); // atualiza o tempo do último envio
+
+    await user.save();
+
+    // 3. Envia o e-mail
+    try {
+        const resetURL = `${process.env.WEBSITE_URL}/reset-password/${resetToken}`;
+        const message = `Olá,\n\nVocê solicitou a redefinição da sua senha. Por favor, clique no link a seguir para criar uma nova senha:\n\n${resetURL}\n\nSe você não solicitou isso, por favor, ignore este e-mail. Este link é válido por 10 minutos.`;
+
+        await sendEmail({
+            email: user.email,
+            subject: 'Redefinição de Senha',
+            message: message
+        });
+
+        res.status(200).json({ message: "If there is an user with this e-mail, we'll be sending an link to redefine your password" });
+
+    } catch (error) {
+        // Limpa os campos em caso de erro no envio para que o usuário possa tentar de novo
+        user.passwordResetToken = undefined;
+        user.passwordResetTokenExpires = undefined;
+        await user.save();
+
+        res.status(500);
+        throw new Error("Error sending the reset password token, try again later");
+    }
+});
 
 
+//@desc User resets their password
+//@route POST /api/auth/reset-password/:token
+//@access public
+export const resetPassword = asyncHandler(async (req, res) => {
+    
+    const hashedToken = crypto.createHash("sha256").update(req.params.token).digest("hex");
 
+    const user = await User.findOne({
+        passwordResetToken: hashedToken,
+        passwordResetTokenExpires: { $gt: Date.now() }
+    });
 
+    if (!user) {
+        res.status(400);
+        throw new Error("Invalid or expired Token");
+    }
 
+    const { password } = req.body;
+    user.password = await bcrypt.hash(password, 10);
+    
+    user.passwordResetToken = undefined;
+    user.passwordResetTokenExpires = undefined;
 
+    await user.save();
+
+    // limpar os cookies e fazer o usuário logar novamente
+    res.clearCookie("accessToken");
+    res.clearCookie("refreshToken");
+
+    res.status(200).json({ message: "Password changed successfully" });
+});
