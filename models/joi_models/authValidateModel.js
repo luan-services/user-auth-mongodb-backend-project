@@ -56,7 +56,7 @@ export const authResendVerificationEmailSchema = Joi.object({
 });
 
 // Schema para a solicitação de reset (só precisa do e-mail)
-export const forgotPasswordSchema = Joi.object({
+export const authForgotPasswordSchema = Joi.object({
     email: Joi.string().email().required().messages({
         "string.email": "O e-mail deve ser um endereço válido.",
         "any.required": "O campo de e-mail é obrigatório."
@@ -64,7 +64,7 @@ export const forgotPasswordSchema = Joi.object({
 });
 
 // Schema para o reset da senha (precisa do token e da nova senha)
-export const resetPasswordSchema = Joi.object({
+export const authResetPasswordSchema = Joi.object({
     token: Joi.string().hex().length(64).required().messages({
         "string.hex": "O token possui um formato inválido.",
         "string.length": "O token possui um formato inválido.",
