@@ -117,6 +117,7 @@ export const resendVerificationEmail = asyncHandler(async (req, res) => {
         res.status(400);
         throw new Error("This email was already verified");
     }
+    
 
     if (user.lastEmailSentAt && user.emailSentCount) { // caso exista uma data para o ultimo envio de email
         const timeSinceLastEmail = Date.now() - user.lastEmailSentAt.getTime();
@@ -129,6 +130,16 @@ export const resendVerificationEmail = asyncHandler(async (req, res) => {
             res.status(429); 
             throw new Error(`Please, wait more ${timeLeft} seconds before sending another e-mail`);
         }
+        
+        // caso ele não esteja em cooldown, a qtd de e-mails enviados é 1; 
+        if (timeSinceLastEmail >= cooldownPeriod) {
+            user.emailSentCount = 1;
+        } 
+        else {
+            // caso esteja em cooldown, pega o valor antigo e soma 1
+            user.emailSentCount = user.emailSentCount + 1;
+        }
+
     }
 
     // se passou do cooldown e da qtd de emails enviados, gera e salva um novo token.
@@ -137,14 +148,7 @@ export const resendVerificationEmail = asyncHandler(async (req, res) => {
 
     user.emailVerificationTokenExpires = Date.now() + 10 * 60 * 1000; // novo tempo de expiração (10 min)
 
-    // caso ele não esteja em cooldown, a qtd de e-mails enviados é 1; 
-    if (timeSinceLastEmail >= cooldownPeriod) {
-        user.emailSentCount = 1;
-    } 
-    else {
-        // caso esteja em cooldown, pega o valor antigo e soma 1
-        user.emailSentCount = user.emailSentCount += 1;
-    }
+
     // enqunato a qtd de e-mails enviados aumentar, o cooldown é colocado pra data atual
     user.lastEmailSentAt = new Date(); // atualiza o tempo do último envio
 
