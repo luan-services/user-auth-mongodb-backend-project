@@ -1,9 +1,9 @@
 // importa os controllers (funçoes que dizem o que cada route vai fazer)
-import { registerUser, loginUser, refreshToken, logoutUser, resendVerificationEmail, verifyEmail } from "../controllers/authControllers.js"
+import { registerUser, loginUser, refreshToken, logoutUser, resendVerificationEmail, verifyEmail, resetPassword, forgotPassword } from "../controllers/authControllers.js"
 // importa o middleware de validação do JOI
 import { validateJoiSchema } from "../middleware/validateJoiSchema.js";
 // importa o schema do JOI
-import { authLoginSchema, authRegisterSchema, authResendVerificationEmailSchema, authVerifyEmailTokenSchema } from "../models/joi_models/authValidateModel.js";
+import { authLoginSchema, authRegisterSchema, authResendVerificationEmailSchema, authVerifyEmailTokenSchema, authForgotPasswordSchema, authResetPasswordSchema } from "../models/joi_models/authValidateModel.js";
 
 import express from "express"
 
@@ -26,6 +26,13 @@ router.post("/resend-verification-email", validateJoiSchema(authResendVerificati
 router.post("/refresh", refreshToken);
 // route para logout
 router.post("/logout", logoutUser);
+
+// rota para solicitar o e-mail de reset
+router.post("/forgot-password", validateJoiSchema(authForgotPasswordSchema, "body"), forgotPassword);
+
+// rota para efetivamente resetar a senha, aqui validamos o 'params' para o token e o 'body' para a nova senha
+router.post("/reset-password/:token", validateJoiSchema(authResetPasswordSchema.extract('token'), "params"), validateJoiSchema(authResetPasswordSchema.extract('password'), "body"), resetPassword);
+
 
 export default router
 
