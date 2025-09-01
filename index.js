@@ -3,6 +3,9 @@ import dotenv from "dotenv"
 
 // importando o route de auth
 import authRoutes from "./routes/authRoutes.js"
+import userRoutes from "./routes/userRoutes.js"
+
+
 // importa o errorHandler
 import { errorHandler } from "./middleware/errorHandler.js"
 // importa a função de carregar o bd
@@ -12,8 +15,7 @@ import cors from "cors";
 // importa library que manipula cookies
 import cookieParser from "cookie-parser"
 
-import userRoutes from "./routes/userRoutes.js"
-// importa a função errorHandler para dar resposta para erros
+import { rateLimitHandler } from "./middleware/rateLimitHandler.js" // import do middleware rateLimiter
 
 // carrega as variáveis .env
 dotenv.config()
@@ -40,10 +42,10 @@ app.use(express.json())
 app.use(cookieParser()); // biblioteca para ler e enviar cookies
 
 // route apontando para auth
-app.use("/api/auth", authRoutes)
+app.use("/api/auth", rateLimitHandler(15 * 60 * 1000, 100), authRoutes) // rate limit de 100 requisições a cada 15 minutos
 
 // novo router, agora apontando pra users
-app.use("/api/users", userRoutes)
+app.use("/api/users", rateLimitHandler(15 * 60 * 1000, 100), userRoutes) // rate limit de 100 requisições a cada 15 minutos
 
 
 // possibilita de usar a função errorHandler no server toda vez que a função throw new Error() é chamada
